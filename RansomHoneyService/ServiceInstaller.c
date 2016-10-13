@@ -56,6 +56,16 @@ BOOL install(PWSTR pszServiceName,
 	return TRUE;
 }
 
+DWORD calcWaitTime(DWORD dwWaitHint) {
+	DWORD dwWaitTime = dwWaitHint / 10;
+
+	if (dwWaitTime < MIN_WAIT_TIME)
+		dwWaitTime = MIN_WAIT_TIME;
+	else if (dwWaitTime > MAX_WAIT_TIME)
+		dwWaitTime = MAX_WAIT_TIME;
+	return dwWaitTime;
+}
+
 BOOL uninstall(PWSTR pszServiceName) {
 	SC_HANDLE schSCManager = NULL;
 	SC_HANDLE schService = NULL;
@@ -133,29 +143,15 @@ BOOL CtrlHandler(DWORD fdwCtrlType) {
 	return TRUE;
 }
 
-inline DWORD calcWaitTime(DWORD dwWaitHint)  {
-	DWORD dwWaitTime = dwWaitHint / 10;
-
-	if (dwWaitTime < MIN_WAIT_TIME)
-		dwWaitTime = MIN_WAIT_TIME;
-	else if (dwWaitTime > MAX_WAIT_TIME)
-		dwWaitTime = MAX_WAIT_TIME;
-	return dwWaitTime;
-}
-
 BOOL runService(const LPCWSTR szSvcName) {
 	SC_HANDLE schSCManager = NULL;
 	SC_HANDLE schService = NULL;
 	SERVICE_STATUS_PROCESS ssStatus = { 0 };
 	BOOL retVal = FALSE;
 
-	DWORD dwOldCheckPoint;
-	DWORD dwStartTickCount;
-	DWORD dwWaitTime;
-
-	if (!SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE)) {
-		printf("WTF?!");
-	}
+	//if (!SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE)) {
+	//	printf("WTF?!");
+	//}
 
 	schSCManager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
 

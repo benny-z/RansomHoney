@@ -22,7 +22,7 @@
  *             Please note that a positive result from this function doesn't necessarily mean
  *             that the DLL was injected to ALL of the processes.
  */
-BOOL injectToAllProcs(const TCHAR* dllPath);
+BOOL injectToAllProcs(const TCHAR* dllPath32, const TCHAR* dllPath64);
 
 /**
  * @brief      Injects and runs a dll specified in the arguments to the process with the Id 

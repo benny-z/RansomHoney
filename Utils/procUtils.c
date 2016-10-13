@@ -1,5 +1,14 @@
 #include "procUtils.h"
 
+BOOL getCurProcArchitecture() {
+#if defined(_WIN64)
+	return ARCH_64;  // 64-bit programs run only on Win64
+#elif defined(_WIN32)
+	BOOL f64 = FALSE;
+	return (IsWow64Process(GetCurrentProcess(), &f64) && f64) ? ARCH_32 : ARCH_64;
+#endif
+}
+
 BOOL getAllProcsIds(DWORD procIds[], DWORD sizeOfProcIds, DWORD* numOfProcs) {
 	DWORD cbNeeded = -1;
 	if (!EnumProcesses(procIds, sizeOfProcIds, &cbNeeded) || -1 == cbNeeded) {
@@ -36,6 +45,31 @@ DWORD getPorcIdByName(const wchar_t* procName) {
 	CloseHandle(hProc);
 
 	return -1;
+}
+
+architechture getProcArchitecture(DWORD procId, HANDLE hProc){
+	HANDLE internalHProc = INVALID_HANDLE_VALUE;
+	architechture retVal = -1;
+	if (NULL == hProc) {
+		internalHProc = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, procId);
+		if (NULL == internalHProc) {
+			return -1;
+		}
+	} else {
+		internalHProc = hProc;
+	}
+	BOOL isWow64Process = -1;
+	if (!IsWow64Process(internalHProc, &isWow64Process)) {
+		debugOutputNum(L"Error in isProc64. IsWow64Process failed (%d)", GetLastError());
+		retVal = -1;
+		goto cleanup;
+	}
+	retVal = (isWow64Process) ? ARCH_32 : ARCH_64;
+cleanup:
+	if (NULL == hProc) {
+		CloseHandle(internalHProc);
+	}
+	return retVal;
 }
 
 

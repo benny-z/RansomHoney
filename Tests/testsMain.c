@@ -5,9 +5,9 @@
 #include "..\RansomHoney\RansomHoney.h"
 #include "..\RansomHoney\commonFilesList.h"
 
-#define DUMMY_DLL (L"C:\\my_projects\\projects\\x64\\Debug\\DummyDLL.dll")
-#define FILE_WATCHER_DLL (L"C:\\my_projects\\projects\\x64\\Debug\\fileWatcher.dll")
-#define FILE_HIDER_DLL (L"C:\\my_projects\\projects\\x64\\Debug\\fileHider.dll")
+#define DUMMY_DLL L"C:\\my_projects\\RansomHoney\\"
+#define DUMMY_DLL64 DUMMY_DLL L"x64\\Debug\\DummyDLL64.dll"
+#define DUMMY_DLL32 DUMMY_DLL L"Debug\\DummyDLL32.dll"
 
 void listFilesInDir(TCHAR szDir[MAX_PATH]) {
 	// source code kindly borrowed from here:
@@ -39,43 +39,49 @@ void listFilesInDir(TCHAR szDir[MAX_PATH]) {
 }
 
 int fileWatcherLocalTest() {
-	HMODULE hLibrary = LoadLibrary(FILE_WATCHER_DLL);
+#if defined(_WIN64)
+	HMODULE hLibrary = LoadLibrary(FILE_WATCHER_64_DLL);
+#elif defined(_WIN32)
+	HMODULE hLibrary = LoadLibrary(FILE_WATCHER_32_DLL);
+#endif 
 
 	if (NULL == hLibrary) {
-		wprintf(L"Failed to get the library %s", FILE_HIDER_DLL);
+		wprintf(L"Failed to get the library %s", FILE_HIDER_64_DLL);
 		return -1;
 	}
 
 	CreateFileW(L"C:\\temp_file_do_not_touch.docx", GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	FreeLibrary(hLibrary);
-	CreateFileW(L"filename", GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	//CreateFileW(L"filename", GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	return 0;
 }
 
 int fileHiderLocalTest() {
 	WIN32_FIND_DATAA FindFileData;
 	FindFirstFileA("test_string", &FindFileData);
-	HMODULE hLibrary = LoadLibrary(FILE_HIDER_DLL);
+	HMODULE hLibrary = LoadLibrary(FILE_HIDER_64_DLL);
 
 	if (NULL == hLibrary) {
-		wprintf(L"Failed to get the library %s", FILE_HIDER_DLL);
+		wprintf(L"Failed to get the library %s", FILE_HIDER_64_DLL);
 		return -1;
 	}
 	listFilesInDir(L"C:\\*");
 	FreeLibrary(hLibrary);
-	CreateFileW(L"filename", GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	CreateFileA(L"filename", GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	return 0;
 }
 
 int injectDummyToProc() {
 	// make sure notepad.exe is running
 	DWORD processId = getPorcIdByName(L"notepad.exe");
-	LPVOID pInjectedDllAddr = injectToProc(DUMMY_DLL, processId);
+	TCHAR* dllToInject = (ARCH_64 == getProcArchitecture(processId, NULL)) ? DUMMY_DLL64 : DUMMY_DLL32;
+
+	LPVOID pInjectedDllAddr = injectToProc(dllToInject, processId);
 	if (NULL == pInjectedDllAddr) {
 		wprintf(L"Failed to inject DLL into process 0x%08lx. Last error: 0x%08lx\n", processId, GetLastError());
 		return -1;
 	}
-	if (!runInjectedDLL(processId, pInjectedDllAddr, DUMMY_DLL)) {
+	if (!runInjectedDLL(processId, pInjectedDllAddr, dllToInject)) {
 		wprintf(L"Failed to run thread for process 0x%08lx\n", processId);
 		return -1;
 	}
@@ -86,12 +92,13 @@ int injectDummyToProc() {
 int hookRemoteFileWatcherTest() {
 	// make sure notepad.exe is running
 	DWORD processId = getPorcIdByName(L"notepad.exe");
-	LPVOID pInjectedDllAddr = injectToProc(FILE_WATCHER_DLL, processId);
+	const TCHAR* dllToInject = (ARCH_64 == getProcArchitecture(processId, NULL)) ? FILE_WATCHER_64_DLL : FILE_WATCHER_32_DLL;
+	LPVOID pInjectedDllAddr = injectToProc(dllToInject, processId);
 	if (NULL == pInjectedDllAddr) {
 		wprintf(L"Failed to inject DLL into process 0x%08lx. Last error: 0x%08lx\n", processId, GetLastError());
 		return -1;
 	}
-	if (!runInjectedDLL(processId, pInjectedDllAddr, FILE_WATCHER_DLL)) {
+	if (!runInjectedDLL(processId, pInjectedDllAddr, FILE_WATCHER_64_DLL)) {
 		wprintf(L"Failed to run thread for process 0x%08lx\n", processId);
 		return -1;
 	}
@@ -100,21 +107,22 @@ int hookRemoteFileWatcherTest() {
 }
 
 int injectToAllProcsDummyTest() {
-	return injectToAllProcs(DUMMY_DLL);
+	return injectToAllProcs(DUMMY_DLL64, DUMMY_DLL32);
 }
 
 int injectToAllProcsHookerTest() {
-	return injectToAllProcs(FILE_WATCHER_DLL);
+	return injectToAllProcs(FILE_WATCHER_64_DLL, FILE_WATCHER_32_DLL);
 }
 
 int simpleInjectionTest() {
 	DWORD processId = GetCurrentProcessId();
-	LPVOID pInjectedDllAddr = injectToProc(DUMMY_DLL, processId);
+	const TCHAR* dllToInject = (ARCH_64 == getProcArchitecture(processId, NULL)) ? DUMMY_DLL64 : DUMMY_DLL32;
+	LPVOID pInjectedDllAddr = injectToProc(dllToInject, processId);
 	if (NULL == pInjectedDllAddr) {
 		printf("Failed to inject DLL into process 0x%08lx. Last error: 0x%08lx\n", processId, GetLastError());
 		return -1;
 	}
-	if (!runInjectedDLL(processId, pInjectedDllAddr, DUMMY_DLL)) {
+	if (!runInjectedDLL(processId, pInjectedDllAddr, dllToInject)) {
 		printf("Failed to run thread for process 0x%08lx\n", processId);
 		return -1;
 	}
@@ -128,7 +136,7 @@ int hookCmdExeTest() {
 	if (-1 == cmdProcId) {
 		return FALSE;
 	}
-	return injectAndRun(FILE_HIDER_DLL, cmdProcId);
+	return injectAndRun(FILE_HIDER_64_DLL, cmdProcId);
 }
 
 int hookExplorerExeTest() {
@@ -143,25 +151,37 @@ int hookNotepadFilerHiderTets() {
 	if (-1 == cmdProcId) {
 		return FALSE;
 	}
-	return injectAndRun(FILE_HIDER_DLL, cmdProcId);
+	return injectAndRun(FILE_HIDER_64_DLL, cmdProcId);
 }
 
 int injectDummyIntoExplorerExe() {
 	DWORD explorerProcId = getPorcIdByName(L"explorer.exe");
+	TCHAR* dllToInject = (ARCH_64 == getProcArchitecture(explorerProcId, NULL)) ? DUMMY_DLL64 : DUMMY_DLL32;
 	if (-1 == explorerProcId) {
 		return FALSE;
 	}
-	return injectAndRun(DUMMY_DLL, explorerProcId);
+	return injectAndRun(dllToInject, explorerProcId);
 }
+
+void dummy() {}
+
+int hookNonExistingFunctionTest() {
+	HookData nonExistingFuncData = { dummy, CreateFileA, NULL, "NonExistingFunction1337", NULL, FALSE };
+	HMODULE hModule = GetModuleHandleA(NULL);
+	return setHook(&nonExistingFuncData, hModule);
+
+};
 
 int main() {
 	//return hookCmdExeTest();
 	//return hookExplorerExeTest();
 	//return hookNotepadFilerHiderTets();
 	//return injectDummyIntoExplorerExe();
-	return fileHiderLocalTest();
-	//return fileWatcherLocalTest();
+	//return fileHiderLocalTest();
+	//CreateFileW(L"C:\\temp_file_do_not_touch.docx", GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	return fileWatcherLocalTest();
 	//return hookRemoteFileWatcherTest();
+	//return hookNonExistingFunctionTest();
 	//return simpleInjectionTest();
 	//return injectDummyToProc();
 	//return injectToAllProcsDummyTest();

@@ -1,8 +1,5 @@
 #include "RansomHoney.h"
 
-#define FILE_WATCHER_DLL (L"c:\\my_projects\\projects\\x64\\Debug\\fileWatcher.dll")
-#define FILE_HIDER_DLL   (L"c:\\my_projects\\projects\\x64\\Debug\\fileHider.dll")
-
 BOOL createFiles() {
 	for (int i = 0; i < NUM_OF_FILES; ++i) {
 		const TCHAR* filename = getFilesList()[i];
@@ -26,18 +23,24 @@ BOOL createFiles() {
 }
 
 BOOL initFileWatcher() {
-	return injectToAllProcs(FILE_WATCHER_DLL);
+	return injectToAllProcs(FILE_WATCHER_64_DLL, FILE_WATCHER_32_DLL);
 }
 
 BOOL hideFiles() {
 	for (int i = 0; i < NUM_OF_HIDE_FROM_PROCS; ++i) {
 		const TCHAR* procName = getProcsToHideFrom()[i];
-		DWORD explorerProcId = getPorcIdByName(procName);
-		if (-1 == explorerProcId) {
+		DWORD procId = getPorcIdByName(procName);
+		if (-1 == procId) {
 			debugOutputStr(L"Error in hideFiles. Process %s is not running", procName);
 			continue;
 		}
-		if (!injectAndRun(FILE_HIDER_DLL, explorerProcId)) {
+		DWORD isX64 = getProcArchitecture(procId, NULL);
+		if (-1 == isX64) {
+			debugOutputNum(L"Error in hideFiles. isProc64 failed (%d)", GetLastError());
+			continue;
+		}
+		TCHAR* dllToRun = (ARCH_64 == isX64) ? FILE_HIDER_64_DLL : FILE_HIDER_32_DLL;
+		if (!injectAndRun(dllToRun, procId)) {
 			return FALSE; // the debug message was printed internally
 		}
 	}

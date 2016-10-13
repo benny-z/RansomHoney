@@ -5,12 +5,26 @@
 #include "..\Utils\DebugOutput.h"
 #include "..\Utils\procUtils.h"
 
-#define RH_SERVICE_NAME          L"RansomHoneyService"
-#define RH_SERVICE_DISPLAY_NAME  L"RansomHoneyService"
+#if defined(_WIN64)
+#define RH_SERVICE_NAME          L"RansomHoneyService64"
+#define RH_SERVICE_DISPLAY_NAME  L"RansomHoneyService64"
+#elif defined(_WIN32)
+#define RH_SERVICE_NAME          L"RansomHoneyService32"
+#define RH_SERVICE_DISPLAY_NAME  L"RansomHoneyService32"
+#endif
+
 #define RH_SERVICE_START_TYPE    SERVICE_DEMAND_START
 #define RH_SERVICE_DEPENDENCIES  L""
 #define RH_SERVICE_ACCOUNT       L".\\LocalSystem"
 #define RH_SERVICE_PASSWORD      NULL
+
+/**
+* @brief       Runs the service not from command line. Initializes the service table and 
+*              calls StartServiceCtrlDispatcher.
+*
+* @return      TRUE iff the procedure ended successfully.
+*/
+BOOL run();
 
 /**
  * @brief      Entry function of this service

@@ -74,7 +74,7 @@ BOOL initFuncsToHook(HMODULE hModule) {
 	if (!isHiderFuncsToHookInit) {
 		LPVOID baseIATAddr = getIATAddr(hModule);
 		if (NULL == baseIATAddr) {
-			debugOutputNum(L"HookerDLL: Error in DllMain, failed to get image import descriptor (0x%08lx)\n", GetLastError());
+			debugOutputNum(L"Hooker: Error in DllMain, failed to get image import descriptor (0x%08lx)\n", GetLastError());
 			return FALSE;
 		}
 

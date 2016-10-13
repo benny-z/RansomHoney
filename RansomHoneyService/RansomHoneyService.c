@@ -81,13 +81,12 @@ VOID WINAPI serviceCtrlHandler(DWORD dwCtrl) {
 }
 
 VOID onStart() {
-	debugOutput(L"RansomHoneyService: in onStart");
 	createFiles();
+	
 	hideFiles();
 	initFileWatcher();
 
 	onStop();
-	return ERROR_SUCCESS;
 }
 
 DWORD startWatchDog() {

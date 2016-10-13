@@ -4,8 +4,8 @@
 #define CREATE_FILE_A        (0)
 #define CREATE_FILE_W        (1)
 
-typedef HANDLE(*createFileAPtr)(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
-typedef HANDLE(*createFileWPtr)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
+typedef HANDLE(WINAPI *createFileAPtr)(LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
+typedef HANDLE(WINAPI *createFileWPtr)(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
 
 HookData g_funcsToHookWatcher[NUM_OF_FUNCS_TO_HOOK_WATCHER];
 static BOOL isWatcherFuncsToHookInit = FALSE;
@@ -98,7 +98,7 @@ BOOL initFuncsToHook(HMODULE hModule) {
 	if (!isWatcherFuncsToHookInit) {
 		LPVOID baseIATAddr = getIATAddr(hModule);
 		if (NULL == baseIATAddr) {
-			debugOutputNum(L"HookerDLL: Error in DllMain, failed to get image import descriptor (0x%08lx)\n", GetLastError());
+			debugOutputNum(L"Hooker: Error in DllMain, failed to get image import descriptor (0x%08lx)\n", GetLastError());
 			return FALSE;
 		}
 

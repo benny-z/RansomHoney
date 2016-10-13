@@ -11,6 +11,13 @@
 #define MAX_NUMBER_OF_PROCS (1024)
 #define INVALID_SIZE (-1)
 
+typedef enum {
+	ARCH_64 = 64,
+	ARCH_32 = 32
+} architechture;
+
+BOOL getCurProcArchitecture();
+
 /**
  * @brief      Retrieves the Ids of all the processes currently running in the system
  *
@@ -45,5 +52,7 @@ DWORD getPorcIdByName(const wchar_t* procName);
  * @return     TRUE iff the process is suspended.
  */
 BOOL isProcSuspended(DWORD procId);
+
+architechture getProcArchitecture(DWORD procId, HANDLE hProc);
 
 #endif // __PROC_UTILS_H__

@@ -6,6 +6,16 @@
 #include "injector.h"
 #include "..\RansomHoney\commonFilesList.h"
 
+#define ROOT_DIR L"c:\\my_projects\\RansomHoney\\Debug\\"
+
+#define FILE_WATCHER        ROOT_DIR L"fileWatcher"
+#define FILE_WATCHER_64_DLL FILE_WATCHER L"64.dll"
+#define FILE_WATCHER_32_DLL FILE_WATCHER L"32.dll"
+
+#define FILE_HIDER          ROOT_DIR L"fileHider"
+#define FILE_HIDER_64_DLL   FILE_HIDER L"64.dll"
+#define FILE_HIDER_32_DLL   FILE_HIDER L"32.dll"
+
 /**
  * @brief      Creates the files (if they do not already exist) that are specified by the 
  *             global g_filesList in commonFilesList.c. Accessing these files will imply 
