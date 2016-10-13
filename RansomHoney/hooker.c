@@ -1,28 +1,30 @@
 #include "hooker.h"
 
+#define ResolveRVA(base,rva) (( (BYTE*)base) + rva)
+
 BOOL setHook(HookData* hookData, HMODULE hModule) {
 	LPVOID newFuncAddr = hookData->newFuncPtr;
-	debugOutput(L"HookerDLL: In setHook");
+	debugOutput(L"Hooker: In setHook");
 	if (NULL == hModule) {
-		debugOutputNum(L"HookerDLL: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
+		debugOutputNum(L"Hooker: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
 		return FALSE;
 	}
 	BOOL IATAddrSuccess = getFuncIATAddr(hookData, hModule);
 	if (FALSE == IATAddrSuccess) {
 		return FALSE;
 	}
-	debugOutput(L"HookerDLL: got the original function IAT address");
+	debugOutput(L"Hooker: got the original function IAT address");
 	if (FALSE == patch(hookData)) {
-		debugOutputNum(L"HookerDLL: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
+		debugOutputNum(L"Hooker: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
 		return FALSE;
 	}
-	debugOutput(L"HookerDLL: patched successfully");
+	debugOutput(L"Hooker: patched successfully");
 	return TRUE;
 }
 
 BOOL patch(const HookData* hookData) {
 	if (NULL == hookData->origFuncPtr) {
-		debugOutputNum(L"HookerDLL: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
+		debugOutputNum(L"Hooker: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
 		return FALSE;
 	}
 	DWORD oldRights = -1;
@@ -30,17 +32,17 @@ BOOL patch(const HookData* hookData) {
 
 	HMODULE hProc = GetCurrentProcess();
 	if (0 == VirtualProtect(hookData->IATFuncAddr, sizeof(LPVOID), newRights, &oldRights)) {
-		debugOutputNum(L"HookerDLL: Error in patch: 0x%08lx", GetLastError());
+		debugOutputNum(L"Hooker: Error in patch: 0x%08lx", GetLastError());
 		return FALSE;
 	}
 
 	if (0 != memcpy_s(hookData->IATFuncAddr, sizeof(SIZE_T), &hookData->newFuncPtr, sizeof(SIZE_T))) {
-		debugOutputNum(L"HookerDLL: Error in patch: 0x%08lx", GetLastError());
+		debugOutputNum(L"Hooker: Error in patch: 0x%08lx", GetLastError());
 		return FALSE;
 	}
 
 	if (0 == VirtualProtect(hookData->IATFuncAddr, sizeof(LPVOID), oldRights, &newRights)) {
-		debugOutputNum(L"HookerDLL: Error in patch: 0x%08lx", GetLastError());
+		debugOutputNum(L"Hooker: Error in patch: 0x%08lx", GetLastError());
 		return FALSE;
 	}
 	return TRUE;
@@ -48,7 +50,7 @@ BOOL patch(const HookData* hookData) {
 
 PIMAGE_IMPORT_DESCRIPTOR getIATAddr(HMODULE hModule) {
 	if (NULL == hModule) {
-		debugOutputNum(L"HookerDLL: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
+		debugOutputNum(L"Hooker: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
 		return NULL;
 	}
 	PIMAGE_DOS_HEADER pImgDosHeaders = (PIMAGE_DOS_HEADER)hModule;
@@ -63,46 +65,60 @@ PIMAGE_IMPORT_DESCRIPTOR getIATAddr(HMODULE hModule) {
 	return pImgImportDesc;
 }
 
-BOOL getFuncIATAddr(HookData* hookData, HMODULE hModule) {
-	if (NULL == hModule) {
-		debugOutputNum(L"HookerDLL: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
-		return FALSE;
-	}
-	PIMAGE_IMPORT_DESCRIPTOR pImgImportDesc = NULL;
-	if (hookData->baseIATAddr) {
-		pImgImportDesc = hookData->baseIATAddr;
-	} else {
+BOOL initBaseIATAddr(HookData* hookData, HMODULE hModule) {
+	if (NULL == hookData->baseIATAddr) {
 		PIMAGE_IMPORT_DESCRIPTOR pImgImportDesc = getIATAddr(hModule);
 		if (NULL == pImgImportDesc) {
-			debugOutputNum(L"HookerDLL: Error in getFuncIATAddr, failed to get image import descriptor: 0x%08lx\n", GetLastError());
+			debugOutputNum(L"Error in initBaseIATAddr. getIATAddr failed (0x%08lx)\n", GetLastError());
 			return FALSE;
 		}
+		hookData->baseIATAddr = pImgImportDesc;
 	}
-	debugOutputStr(L"HookerDLL: Looking for the function: %s", hookData->funcName);
+	return TRUE;
+}
 
-	for (; pImgImportDesc->FirstThunk; ++pImgImportDesc) {
-		IMAGE_THUNK_DATA* thunkData = (IMAGE_THUNK_DATA*)((BYTE*)hModule + pImgImportDesc->OriginalFirstThunk);
-		for (int i = 0; thunkData->u1.Function; ++i, ++thunkData) {
-			char* funcName = (char*)((BYTE*)hModule + (DWORD)thunkData->u1.AddressOfData + 2);
-			if (0 == strcmp(funcName, hookData->funcName)) {
-				LPVOID funcAddr = (SIZE_T*)((BYTE*)hModule + pImgImportDesc->FirstThunk) + i;
-				hookData->IATFuncAddr = funcAddr;
+BOOL getFuncIATAddr(HookData* hookData, HMODULE hModule) {
+	debugOutputStr(L"Hooker: Looking for the function: %s", hookData->funcName);
+	if (NULL == hModule) {
+		debugOutput(L"Error in getFuncIATAddr. hModule is NULL\n");
+		return FALSE;
+	}
+	if (!initBaseIATAddr(hookData, hModule)) {
+		return FALSE;
+	}
+
+	for (PIMAGE_IMPORT_DESCRIPTOR pImgImportDesc = hookData->baseIATAddr; 
+		pImgImportDesc->Characteristics != 0; 
+		++pImgImportDesc) {
+		PIMAGE_THUNK_DATA pOriginalThunk = (PIMAGE_THUNK_DATA)ResolveRVA(hModule, pImgImportDesc->OriginalFirstThunk);
+		if (!pOriginalThunk) {
+			continue;
+		}
+
+		for (PIMAGE_THUNK_DATA pThunk = (PIMAGE_THUNK_DATA)ResolveRVA(hModule, pImgImportDesc->FirstThunk);
+			pOriginalThunk->u1.Function != NULL; 
+			pOriginalThunk++, pThunk++) {
+			if (IMAGE_SNAP_BY_ORDINAL(pOriginalThunk->u1.Ordinal)) {
+				continue;
+			}
+			PIMAGE_IMPORT_BY_NAME pImImport = (PIMAGE_IMPORT_BY_NAME)ResolveRVA(hModule, pOriginalThunk->u1.AddressOfData);
+			if (0 == _stricmp(hookData->funcName, pImImport->Name)) {
+				hookData->IATFuncAddr = &(pThunk->u1.Function);
 				return TRUE;
 			}
 		}
 	}
-
-	debugOutputStr(L"HookerDLL: No match found for %s", hookData->funcName);
+	debugOutputStr(L"Hooker: No match found for %s", hookData->funcName);
 	return FALSE;
 }
 
 BOOL removeHook(const HookData* hookData, HMODULE hModule) {
 	if (NULL == hModule) {
-		debugOutputNum(L"HookerDLL: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
+		debugOutputNum(L"Hooker: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
 		return FALSE;
 	}
 	if (NULL == hookData->origFuncPtr) {
-		debugOutputNum(L"HookerDLL: Error in removeHook: 0x%08lx\n", GetLastError());
+		debugOutputNum(L"Hooker: Error in removeHook: 0x%08lx\n", GetLastError());
 		return FALSE;
 	}
 
@@ -116,12 +132,12 @@ BOOL removeHook(const HookData* hookData, HMODULE hModule) {
 
 VOID hookMultipleFuncs(HookData* funcsToHook, HMODULE hModule, DWORD numOfFuncsToHook) {
 	for (DWORD i = 0; i < numOfFuncsToHook; ++i) {
-		debugOutputNum(L"HookerDLL: Trying to hook function number 0x%08lx", i);
+		debugOutputNum(L"Hooker: Trying to hook function number 0x%08lx", i);
 		if (FALSE == setHook((funcsToHook+i), hModule)) {
-			debugOutputNum(L"HookerDLL: failed to set hook. (0x%08lx)", GetLastError());
+			debugOutputNum(L"Hooker: failed to set hook. (0x%08lx)", GetLastError());
 		}
 		else {
-			debugOutputNum(L"HookerDLL: hook on 0x%08lx set successfully", i);
+			debugOutputNum(L"Hooker: hook on 0x%08lx set successfully", i);
 			(funcsToHook + i)->isHookSet = TRUE;
 		}
 	}

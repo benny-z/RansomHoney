@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <stdio.h>
 #include "..\Utils\DebugOutput.h"
+#include "..\Utils\procUtils.h"
 
 /**
  * A struct containing various data regarding a hook.
