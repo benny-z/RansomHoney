@@ -3,7 +3,7 @@
 
 #include <Windows.h>
 
-#define NUM_OF_FILES (2)
+#define NUM_OF_FILES (4)
 #define NUM_OF_HIDE_FROM_PROCS (2)
 
 /**
