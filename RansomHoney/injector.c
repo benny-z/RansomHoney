@@ -126,14 +126,18 @@ BOOL injectToAllProcs(const TCHAR* dllPath32, const TCHAR* dllPath64) {
 	for (unsigned int i = 0; i < numOfProcs; ++i) {
 		DWORD processId = procsList[i];
 		if (0 != processId) {
-			DWORD isX64 = getProcArchitecture(processId, NULL);
-			if (-1 == isX64) {
-				debugOutputNum(L"Error in hideFiles. isProc64 failed (%d)", GetLastError());
+			architecture procArch = getProcArchitecture(processId, NULL);
+			if (-1 == procArch) {
+				debugOutputNum(L"Error in injectToAllProcs. getProcArchitecture failed (%d)", GetLastError());
 				continue;
 			}
-			const TCHAR* dllToRun = (ARCH_64 == isX64) ? dllPath64 : dllPath32;
+			if (procArch != getCurProcArchitecture()) {
+				debugOutputNum(L"Error in hideFiles. Process %d and current process architectures do not match\n", processId);
+				continue;
+			}
+			const TCHAR* dllToRun = (ARCH_64 == procArch) ? dllPath64 : dllPath32;
 			if (!injectAndRun(dllToRun, processId)) {
-				return FALSE; // the debug message was printed internally
+				continue; // the debug message was printed internally
 			}
 		}
 	}

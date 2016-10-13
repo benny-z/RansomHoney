@@ -6,7 +6,11 @@
 #include "injector.h"
 #include "..\RansomHoney\commonFilesList.h"
 
-#define ROOT_DIR L"c:\\my_projects\\RansomHoney\\Debug\\"
+#if defined(_WIN64)
+#define ROOT_DIR L"C:\\my_projects\\RansomHoney\\bin\\64\\"
+#elif defined(_WIN32)
+#define ROOT_DIR L"C:\\my_projects\\RansomHoney\\bin\\32\\"
+#endif
 
 #define FILE_WATCHER        ROOT_DIR L"fileWatcher"
 #define FILE_WATCHER_64_DLL FILE_WATCHER L"64.dll"

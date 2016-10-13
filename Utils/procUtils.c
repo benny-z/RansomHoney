@@ -47,12 +47,13 @@ DWORD getPorcIdByName(const wchar_t* procName) {
 	return -1;
 }
 
-architechture getProcArchitecture(DWORD procId, HANDLE hProc){
+architecture getProcArchitecture(DWORD procId, HANDLE hProc){
 	HANDLE internalHProc = INVALID_HANDLE_VALUE;
-	architechture retVal = -1;
+	architecture retVal = -1;
 	if (NULL == hProc) {
 		internalHProc = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, procId);
 		if (NULL == internalHProc) {
+			debugOutputNum(L"Error in getProcArchitecture. OpenProcess failed (%d)", GetLastError());
 			return -1;
 		}
 	} else {
@@ -60,7 +61,7 @@ architechture getProcArchitecture(DWORD procId, HANDLE hProc){
 	}
 	BOOL isWow64Process = -1;
 	if (!IsWow64Process(internalHProc, &isWow64Process)) {
-		debugOutputNum(L"Error in isProc64. IsWow64Process failed (%d)", GetLastError());
+		debugOutputNum(L"Error in getProcArchitecture. IsWow64Process failed (%d)", GetLastError());
 		retVal = -1;
 		goto cleanup;
 	}

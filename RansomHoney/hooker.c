@@ -96,7 +96,7 @@ BOOL getFuncIATAddr(HookData* hookData, HMODULE hModule) {
 		}
 
 		for (PIMAGE_THUNK_DATA pThunk = (PIMAGE_THUNK_DATA)ResolveRVA(hModule, pImgImportDesc->FirstThunk);
-			pOriginalThunk->u1.Function != NULL; 
+			0 != pOriginalThunk->u1.Function; 
 			pOriginalThunk++, pThunk++) {
 			if (IMAGE_SNAP_BY_ORDINAL(pOriginalThunk->u1.Ordinal)) {
 				continue;

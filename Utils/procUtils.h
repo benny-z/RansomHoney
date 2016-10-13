@@ -14,7 +14,7 @@
 typedef enum {
 	ARCH_64 = 64,
 	ARCH_32 = 32
-} architechture;
+} architecture;
 
 BOOL getCurProcArchitecture();
 
@@ -53,6 +53,6 @@ DWORD getPorcIdByName(const wchar_t* procName);
  */
 BOOL isProcSuspended(DWORD procId);
 
-architechture getProcArchitecture(DWORD procId, HANDLE hProc);
+architecture getProcArchitecture(DWORD procId, HANDLE hProc);
 
 #endif // __PROC_UTILS_H__

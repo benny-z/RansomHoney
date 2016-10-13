@@ -67,7 +67,7 @@ int fileHiderLocalTest() {
 	}
 	listFilesInDir(L"C:\\*");
 	FreeLibrary(hLibrary);
-	CreateFileA(L"filename", GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	CreateFileA("filename", GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	return 0;
 }
 
@@ -172,19 +172,27 @@ int hookNonExistingFunctionTest() {
 
 };
 
+int fullProcessTest() {
+	createFiles();
+
+	hideFiles();
+	initFileWatcher();
+	return 0;
+}
+
 int main() {
 	//return hookCmdExeTest();
 	//return hookExplorerExeTest();
 	//return hookNotepadFilerHiderTets();
 	//return injectDummyIntoExplorerExe();
 	//return fileHiderLocalTest();
-	//CreateFileW(L"C:\\temp_file_do_not_touch.docx", GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	return fileWatcherLocalTest();
+	//return fileWatcherLocalTest();
 	//return hookRemoteFileWatcherTest();
 	//return hookNonExistingFunctionTest();
 	//return simpleInjectionTest();
 	//return injectDummyToProc();
 	//return injectToAllProcsDummyTest();
 	//return injectToAllProcsHookerTest();
+	return fullProcessTest();
 	//return 0;
  }
