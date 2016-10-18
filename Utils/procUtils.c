@@ -1,5 +1,13 @@
 #include "procUtils.h"
 
+BOOL getFilenameByHandle(HANDLE hFile, LPTSTR lpszFilePath) {
+	if (MAX_PATH < GetFinalPathNameByHandle(hFile, lpszFilePath, MAX_PATH, VOLUME_NAME_NT)) {
+		debugOutputNum(L"Error in getFilenameByHandle. GetFinalPathNameByHandle failed (%d)", GetLastError());
+		return FALSE;
+	}
+	return TRUE;
+}
+
 BOOL getCurProcArchitecture() {
 #if defined(_WIN64)
 	return ARCH_64;  // 64-bit programs run only on Win64

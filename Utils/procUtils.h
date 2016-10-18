@@ -16,6 +16,8 @@ typedef enum {
 	ARCH_32 = 32
 } architecture;
 
+BOOL getFilenameByHandle(HANDLE hFile, LPTSTR lpszFilePath);
+
 BOOL getCurProcArchitecture();
 
 /**
