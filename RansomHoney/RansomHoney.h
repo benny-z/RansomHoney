@@ -20,6 +20,8 @@
 #define FILE_HIDER_64_DLL   FILE_HIDER L"64.dll"
 #define FILE_HIDER_32_DLL   FILE_HIDER L"32.dll"
 
+BOOL initFiles();
+
 /**
  * @brief      Creates the files (if they do not already exist) that are specified by the 
  *             global g_filesList in commonFilesList.c. Accessing these files will imply 

@@ -1,25 +1,27 @@
 #include "RansomHoney.h"
 
 BOOL createFiles() {
-	for (int i = 0; i < NUM_OF_FILES; ++i) {
+	for (unsigned int i = 0; i < getNumOfFiles(); ++i) {
 		const TCHAR* filename = getFilesList()[i];
-		TCHAR expandedFname[MAX_PATH] = { 0 };
-		if (0 == ExpandEnvironmentStrings(filename, expandedFname, MAX_PATH)) {
-			wprintf(L"Error in createFiles. ExpandEnvironmentStrings failed (0x%08lx)", GetLastError());
-			return FALSE;
+		if (NULL == filename) {
+			continue;
 		}
-		HANDLE hFile = CreateFile(expandedFname, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_HIDDEN, NULL);
+		HANDLE hFile = CreateFile(filename, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_HIDDEN, NULL);
 		if (INVALID_HANDLE_VALUE == hFile) {
 			DWORD lastError = GetLastError();
 			if (ERROR_FILE_EXISTS == lastError) {
 				continue;
 			}
 			wprintf(L"Error in createFiles. CreateFile failed (0x%08lx)", lastError);
-			return FALSE;
+			continue;
 		}
 		CloseHandle(hFile);
 	}
 	return TRUE;
+}
+
+BOOL initFiles() {
+	return initFilesList();
 }
 
 BOOL initFileWatcher() {
@@ -62,7 +64,7 @@ BOOL isFileHiddenA(const char* filename) {
 
 BOOL isFileHiddenW(const wchar_t* curFullpath) {
 	const TCHAR** filesLst = getFilesList();
-	for (int i = 0; i < NUM_OF_FILES; ++i) {
+	for (unsigned int i = 0; i < getNumOfFiles(); ++i) {
 		const TCHAR* fileFullpath = filesLst[i];
 		TCHAR* hiddenFilename = PathFindFileName(fileFullpath);
 		TCHAR* filename = PathFindFileName(curFullpath);
