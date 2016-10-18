@@ -4,6 +4,8 @@
 #include "..\RansomHoney\hooker.h"
 #include "..\RansomHoney\RansomHoney.h"
 #include "..\RansomHoney\commonFilesList.h"
+#include "..\Utils\userUtils.h"
+#include "..\Utils\stringUtils.h"
 
 #define DUMMY_DLL L"C:\\my_projects\\RansomHoney\\"
 #define DUMMY_DLL64 DUMMY_DLL L"x64\\Debug\\DummyDLL64.dll"
@@ -36,6 +38,22 @@ void listFilesInDir(TCHAR szDir[MAX_PATH]) {
 	} while (FindNextFile(hFind, &ffd) != 0);
 
 	FindClose(hFind);
+}
+
+int getFileTypeLocalTest() {
+#if defined(_WIN64)
+	HMODULE hLibrary = LoadLibrary(FILE_WATCHER_64_DLL);
+#elif defined(_WIN32)
+	HMODULE hLibrary = LoadLibrary(FILE_WATCHER_32_DLL);
+#endif 
+
+	if (NULL == hLibrary) {
+		wprintf(L"Failed to get the library %s", FILE_HIDER_64_DLL);
+		return -1;
+	}
+	HANDLE hFile = CreateFileW(L"C:\\temp_file_do_not_touch.docx", GENERIC_READ, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	GetFileType(hFile);
+	return 0;
 }
 
 int fileWatcherLocalTest() {
@@ -173,6 +191,7 @@ int hookNonExistingFunctionTest() {
 };
 
 int fullProcessTest() {
+	initFiles();
 	createFiles();
 
 	hideFiles();
@@ -188,6 +207,7 @@ int main() {
 	//return fileHiderLocalTest();
 	//return fileWatcherLocalTest();
 	//return hookRemoteFileWatcherTest();
+	//return getFileTypeLocalTest();
 	//return hookNonExistingFunctionTest();
 	//return simpleInjectionTest();
 	//return injectDummyToProc();
