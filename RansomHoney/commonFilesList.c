@@ -31,106 +31,135 @@ DWORD getNumOfFiles() {
 BOOL addExpandedFile(const TCHAR* filename, int curIndex) {
 	TCHAR expandedFname[MAX_PATH] = { 0 };
 	if (0 == ExpandEnvironmentStrings(filename, expandedFname, MAX_PATH)) {
-		// TODO: error
+		debugOutputNum(L"Error in addExpandedFile. ExpandEnvironmentStrings failed (%d)", GetLastError());
 		return FALSE;
 	}
-	DWORD expandedFnameSize = wcslen(expandedFname);
-	DWORD curIndexFileSize = sizeof(TCHAR) * (expandedFnameSize + 1);
+	size_t expandedFnameSize = wcslen(expandedFname);
+	size_t curIndexFileSize = sizeof(TCHAR) * (expandedFnameSize + 1);
+
 	g_filesList[curIndex] = (TCHAR*)malloc(curIndexFileSize);
+	
 	if (NULL == g_filesList[curIndex]) {
-		// TODO: error message
+		debugOutputNum(L"Error in addExpandedFile. Memory allocation for g_filesList[curIndex] failed (%d)", GetLastError());
 		return FALSE;
 	}
+	debugOutputStr(L"Adding the file: %s\n", expandedFname);
 	return NULL != memcpy(g_filesList[curIndex], expandedFname, curIndexFileSize);
 }
 
-const TCHAR* getUsersPath() {
-	TCHAR *curUserPath = USER_PROFILE_ENV_VAR;
-	TCHAR curUsername[MAX_PATH];
-	DWORD usernameSize;
-	if (!GetUserName((LPWSTR)&curUsername, &usernameSize)) {
-		// TODO: error
-		return NULL;
+static TCHAR* g_usersPath = NULL;
+
+BOOL initUsersPath() {
+	if (NULL != g_usersPath) {
+		return TRUE;
 	}
-	TCHAR extendedCurUserPath[MAX_PATH];
-	if (0 == ExpandEnvironmentStrings(curUserPath, extendedCurUserPath, MAX_PATH)) {
-		// TODO: error
-		return NULL;
+	
+	DWORD userPathSize = -1;
+	if (!GetProfilesDirectory(NULL, &userPathSize) || (-1 == userPathSize)) {
+		DWORD lastError = GetLastError();
+		if (ERROR_INSUFFICIENT_BUFFER != lastError) {
+			debugOutputNum(L"Error in getUsersPath. GetProfilesDirectory failed on first run (%d)", GetLastError());
+			return FALSE;
+		}
 	}
-	return strReplace(extendedCurUserPath, curUsername, L"");
+
+	g_usersPath = (TCHAR*)malloc(sizeof(TCHAR) * (userPathSize + 1));
+	if (NULL == g_usersPath) {
+		debugOutputNum(L"Error in getUsersPath. Memory allocation failed (%d)", GetLastError());
+		return FALSE;
+	}
+	if (!GetProfilesDirectory(g_usersPath, &userPathSize)) {
+		debugOutputNum(L"Error in getUsersPath. GetProfilesDirectory failed on second run (%d)", GetLastError());
+		return FALSE;
+	}
+	g_usersPath[userPathSize - 1] = '\\';
+	g_usersPath[userPathSize] = '\0';
+	return TRUE;
 }
 
-BOOL expandUserProfile(const TCHAR usrsLst[][MAX_NUM_OF_USERS], const TCHAR* filename, DWORD numOfUsers, int* curIndex) {
+BOOL expandSingleUserProfile(const TCHAR* username, const TCHAR* filename, int* curIndex) {
 	BOOL retVal = TRUE;
-	const TCHAR* usersPath = getUsersPath();
 
-	if (NULL == usersPath) {
-		return FALSE; // Error message printed out in the inner function
-	}
+	const TCHAR* fnameWithNoUserPath = strReplace(filename, USER_PROFILE_ENV_VAR, L"");
 
-	for (unsigned int j = 0; j < numOfUsers; ++j) {
-		const TCHAR* username = usrsLst[j];
-		const TCHAR* fnameWithNoUserPath = strReplace(filename, USER_PROFILE_ENV_VAR, L"");
+	size_t usernameSize = wcslen(username);
+	size_t fnameWithNoUserPathSize = wcslen(fnameWithNoUserPath);
+	size_t usersPathSize = wcslen(g_usersPath);
 
-		DWORD usernameSize = wcslen(username);
-		DWORD fnameWithNoUserPathSize = wcslen(fnameWithNoUserPath);
-		DWORD usersPathSize = wcslen(usersPath);
+	size_t outPathElems = fnameWithNoUserPathSize + usernameSize + usersPathSize + 1;
+	size_t outPathSize = sizeof(TCHAR) * outPathElems;
+	TCHAR* outPath = (TCHAR*)malloc(outPathSize);
+	memset(outPath, 0, outPathSize);
 
-		DWORD outPathElems = fnameWithNoUserPathSize + usernameSize + usersPathSize + 1;
-		DWORD outPathSize = sizeof(TCHAR) * outPathElems;
-		TCHAR* outPath = (TCHAR*)malloc(outPathSize);
-		memset(outPath, 0, outPathSize);
+	wcscpy_s(outPath, outPathElems, g_usersPath);
+	wcscat_s(outPath, outPathElems, username);
 
-		wcscpy_s(outPath, outPathElems, usersPath);
-		wcscat_s(outPath, outPathElems, username);
+	if (retVal = PathFileExists(outPath)) {
 		wcscat_s(outPath, outPathElems, fnameWithNoUserPath);
-
-		if (!addExpandedFile(outPath, *curIndex)) {
-			retVal = FALSE;
-		}
-		if (fnameWithNoUserPath) {
-			free((TCHAR*)fnameWithNoUserPath);
-			fnameWithNoUserPath = NULL;
-		}
-		if (outPath) {
-			free(outPath);
-			outPath = NULL;
-		}
-		++(*curIndex);
-		if (FALSE == retVal) {
-			break;
-		}
+		retVal = addExpandedFile(outPath, *curIndex);
 	}
-	if (usersPath) {
-		free((TCHAR*)usersPath);
-		usersPath = NULL;
+
+	if (fnameWithNoUserPath) {
+		free((TCHAR*)fnameWithNoUserPath);
+		fnameWithNoUserPath = NULL;
+	}
+	if (outPath) {
+		free(outPath);
+		outPath = NULL;
 	}
 	return retVal;
 }
 
+BOOL expandUsersProfile(const TCHAR usrsLst[][MAX_NUM_OF_USERS], const TCHAR* filename, DWORD numOfUsers, int* curIndex) {
+	if (!initUsersPath()) {
+		return FALSE; // Error message printed out in the getUsersPath function
+	}
+	for (unsigned int j = 0; j < numOfUsers; ++j) {
+		const TCHAR* username = usrsLst[j];
+		BOOL retVal = expandSingleUserProfile(username, filename, curIndex);
+		if (retVal) {
+			++(*curIndex);
+		} else {
+			--g_numOfFiles;
+		}
+	}
+	return TRUE;
+}
+
+static BOOL isFileListInitialized = FALSE;
 BOOL initFilesList() {
+	if (isFileListInitialized) {
+		return TRUE;
+	}
+
 	TCHAR usrsLst[MAX_PATH][MAX_NUM_OF_USERS] = { 0 };
 	DWORD numOfUsers = getAllUsers(&usrsLst);
 	DWORD fileWithUserProfile = numOfFilesWithUserProfile();
 
-	g_numOfFiles = NUM_OF_FILES - fileWithUserProfile + (fileWithUserProfile * numOfUsers) - 1;
+	g_numOfFiles = NUM_OF_FILES - fileWithUserProfile + (fileWithUserProfile * numOfUsers );
 	g_filesList = malloc(sizeof(TCHAR*) * g_numOfFiles);
 
 	if (NULL == g_filesList) {
-		// TODO: error message
+		debugOutputNum(L"Error in initFilesList. Memory allocation for g_filesList failed (%d)", GetLastError());
 		return FALSE;
 	}
-
 	DWORD counter = 0;
-	for (int i = 0, j = 0; i < NUM_OF_FILES; ++i) {
+	for (int i = 0; i < NUM_OF_FILES; ++i) {
 		const TCHAR* filename = g_initFilesList[i];
 		if (0 != wcsstr(filename, USER_PROFILE_ENV_VAR)) {
-			expandUserProfile(usrsLst, filename, numOfUsers, &counter);
+			if (!expandUsersProfile(usrsLst, filename, numOfUsers, &counter)) {
+				debugOutputNum(L"Error in initFilesList. expandUserProfile failed (%d)", GetLastError());
+				return FALSE;
+			}
 		} else {
-			addExpandedFile(filename, counter);
+			if (!addExpandedFile(filename, counter)) {
+				debugOutputNum(L"Error in initFilesList. expandUserProfile failed (%d)", GetLastError());
+				return FALSE;
+			}
 			++counter;
 		}
 	}
+	isFileListInitialized = TRUE;
 	return TRUE;
 }
 

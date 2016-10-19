@@ -3,8 +3,11 @@
 
 #include <Windows.h>
 #include <string.h>
+#include <UserEnv.h>
+#include <Shlwapi.h>
 #include "..\Utils\userUtils.h"
 #include "..\Utils\stringUtils.h"
+#include "..\Utils\DebugOutput.h"
 
 #define NUM_OF_FILES (6)
 #define NUM_OF_HIDE_FROM_PROCS (2)
