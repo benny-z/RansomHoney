@@ -5,9 +5,6 @@
 
 SERVICE_STATUS_HANDLE g_statusHandle = NULL;
 
-// note: the g_serviceStopEvent will be used further in the development. 
-// Currently, its own purpose is to remind that someday there would be some
-// kernel code that would inject fileWatcher into each new process
 HANDLE g_serviceStopEvent = INVALID_HANDLE_VALUE;
 
 SERVICE_STATUS g_serviceStatusStruct = { 0 };
@@ -81,17 +78,28 @@ VOID WINAPI serviceCtrlHandler(DWORD dwCtrl) {
 }
 
 VOID onStart() {
-	createFiles();
-	
-	hideFiles();
-	initFileWatcher();
-
+	debugOutput(L"In onStart");
+	if (!initFilesList()) {
+		debugOutput(L"initFilesList failed!");
+		return;
+	}
+	if (!createFiles()) {
+		debugOutput(L"createFiles failed!");
+		return;
+	}
+	if (!hideFiles()) {
+		debugOutput(L"hideFiles failed!");
+		return;
+	}
+	if (!initFileWatcher()) {
+		debugOutput(L"initFileWatcher failed!");
+		return;
+	}
+	if (!startWatchDog(g_serviceStopEvent)) {
+		debugOutput(L"startWatchDog failed!");
+		return;
+	}
 	onStop();
-}
-
-DWORD startWatchDog() {
-	/* TODO: implement*/
-	return FALSE;
 }
 
 VOID onStop() {

@@ -1,7 +1,33 @@
 #include "RansomHoney.h"
 
+#include "..\Watchdog\watchdog.h"
+
+#ifdef __cplusplus
+extern "C" BOOL injectToAndRunNewProc(DWORD processId);
+#endif // __cplusplus
+
+BOOL injectToAndRunFileWatcher(DWORD processId) {
+	if (0 == processId){
+		return FALSE;
+	}
+	architecture procArch = getProcArchitecture(processId, NULL);
+	if (-1 == procArch) {
+		debugOutputNum(L"Error in injectToAllProcs. getProcArchitecture failed (%d)", GetLastError());
+		return FALSE;
+	}
+	else {
+		TCHAR* dllToRun = (ARCH_64 == procArch) ? FILE_WATCHER_64_DLL : FILE_WATCHER_32_DLL;
+		return injectAndRun(dllToRun, processId);
+	}
+}
+
+BOOL startWatchDog(HANDLE serviceStopEvent) {
+	return startWtchdg(injectToAndRunFileWatcher, serviceStopEvent);
+}
+
 BOOL createFiles() {
-	for (unsigned int i = 0; i < getNumOfFiles(); ++i) {
+	DWORD numOfFiles = getNumOfFiles();
+	for (unsigned int i = 0; i < numOfFiles; ++i) {
 		const TCHAR* filename = getFilesList()[i];
 		if (NULL == filename) {
 			continue;
@@ -10,12 +36,14 @@ BOOL createFiles() {
 		if (INVALID_HANDLE_VALUE == hFile) {
 			DWORD lastError = GetLastError();
 			if (ERROR_FILE_EXISTS == lastError) {
+				CloseHandle(hFile);
 				continue;
 			}
 			wprintf(L"Error in createFiles. CreateFile failed (0x%08lx)", lastError);
-			continue;
 		}
-		CloseHandle(hFile);
+		if (hFile) {
+			CloseHandle(hFile);
+		}
 	}
 	return TRUE;
 }

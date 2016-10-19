@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include "..\Utils\DebugOutput.h"
 #include "..\Utils\procUtils.h"
+#include "..\Watchdog\watchdog.h"
 
 #if defined(_WIN64)
 #define RH_SERVICE_NAME          L"RansomHoneyService64"
@@ -97,13 +98,5 @@ BOOL setServiceStatus(SERVICE_STATUS_HANDLE statusHandle,
 	DWORD dwCurrentState,
 	DWORD dwWin32ExitCode,
 	DWORD dwWaitHint);
-
-/**
- * @brief      Makes sure that fileWatcher is injected into new processes as well.
- * 
- * @note       YET TO BE IMPLEMENTED
- * @return     
- */
-DWORD startWatchDog();
 
 #endif // __RANSOM_HONEY_SERVICE_H__

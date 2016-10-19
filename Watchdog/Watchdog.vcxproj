@@ -19,10 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B082B981-2DF1-4150-864A-CB693626A5A4}</ProjectGuid>
-    <RootNamespace>RansomHoney</RootNamespace>
+    <ProjectGuid>{BD3A7305-90A5-4C6A-8C72-1518EBF099A3}</ProjectGuid>
+    <RootNamespace>Watchdog</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
-    <ProjectName>RansomHoney</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -70,22 +69,22 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IntDir>$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\$(PlatformArchitecture)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)64</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IntDir>$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\$(PlatformArchitecture)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)64</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetName>$(ProjectName)32</TargetName>
     <OutDir>$(SolutionDir)bin\$(PlatformArchitecture)\</OutDir>
+    <TargetName>$(ProjectName)32</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetName>$(ProjectName)32</TargetName>
     <OutDir>$(SolutionDir)bin\$(PlatformArchitecture)\</OutDir>
+    <TargetName>$(ProjectName)32</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -94,7 +93,7 @@
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>Userenv.lib;Shlwapi.lib;$(SolutionDir)bin\$(PlatformArchitecture)\Watchdog32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)Utils32.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -103,11 +102,8 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
-    <Link>
-      <AdditionalDependencies>$(OutDir)Utils.lib;$(OutDir)injector.lib;$(OutDir)Utils.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
     <Lib>
-      <AdditionalDependencies>Userenv.lib;Shlwapi.lib;$(SolutionDir)bin\$(PlatformArchitecture)\Watchdog64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)Utils64.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -123,7 +119,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <Lib>
-      <AdditionalDependencies>Userenv.lib;Shlwapi.lib;$(SolutionDir)bin\$(PlatformArchitecture)\Watchdog32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)Utils32.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -139,25 +135,19 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <Lib>
-      <AdditionalDependencies>Userenv.lib;Shlwapi.lib;$(SolutionDir)bin\$(PlatformArchitecture)\Watchdog64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)Utils64.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="watchdog.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="watchdog.h" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Utils\Utils.vcxproj">
       <Project>{094addbf-6f2e-46f4-b658-fb45c83355a9}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="commonFilesList.c" />
-    <ClCompile Include="hooker.c" />
-    <ClCompile Include="injector.c" />
-    <ClCompile Include="RansomHoney.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="commonFilesList.h" />
-    <ClInclude Include="hooker.h" />
-    <ClInclude Include="injector.h" />
-    <ClInclude Include="RansomHoney.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

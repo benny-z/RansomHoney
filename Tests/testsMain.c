@@ -191,11 +191,18 @@ int hookNonExistingFunctionTest() {
 };
 
 int fullProcessTest() {
-	initFiles();
+	if (!initFilesList()) {
+		debugOutput(L"Init files List failed!");
+		return 1;
+	}
 	createFiles();
-
 	hideFiles();
+	LoadLibrary(L"fileWatcher32.dll");
 	initFileWatcher();
+	//HANDLE hFile = CreateFileW(L"C:\\temp_file_do_not_touch.docx", GENERIC_READ, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE serviceStopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	startWatchDog(serviceStopEvent);
+
 	return 0;
 }
 
