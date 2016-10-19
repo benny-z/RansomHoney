@@ -4,7 +4,6 @@
 
 BOOL setHook(HookData* hookData, HMODULE hModule) {
 	LPVOID newFuncAddr = hookData->newFuncPtr;
-	debugOutput(L"Hooker: In setHook");
 	if (NULL == hModule) {
 		debugOutputNum(L"Hooker: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
 		return FALSE;
@@ -13,7 +12,6 @@ BOOL setHook(HookData* hookData, HMODULE hModule) {
 	if (FALSE == IATAddrSuccess) {
 		return FALSE;
 	}
-	debugOutput(L"Hooker: got the original function IAT address");
 	if (FALSE == patch(hookData)) {
 		debugOutputNum(L"Hooker: Error in getFuncIATAddr: 0x%08lx\n", GetLastError());
 		return FALSE;
@@ -78,7 +76,6 @@ BOOL initBaseIATAddr(HookData* hookData, HMODULE hModule) {
 }
 
 BOOL getFuncIATAddr(HookData* hookData, HMODULE hModule) {
-	debugOutputStr(L"Hooker: Looking for the function: %s", hookData->funcName);
 	if (NULL == hModule) {
 		debugOutput(L"Error in getFuncIATAddr. hModule is NULL\n");
 		return FALSE;
@@ -108,7 +105,7 @@ BOOL getFuncIATAddr(HookData* hookData, HMODULE hModule) {
 			}
 		}
 	}
-	debugOutputStr(L"Hooker: No match found for %s", hookData->funcName);
+	//debugOutputStr(L"Hooker: No match found for %s", hookData->funcName);
 	return FALSE;
 }
 
@@ -132,9 +129,9 @@ BOOL removeHook(const HookData* hookData, HMODULE hModule) {
 
 VOID hookMultipleFuncs(HookData* funcsToHook, HMODULE hModule, DWORD numOfFuncsToHook) {
 	for (DWORD i = 0; i < numOfFuncsToHook; ++i) {
-		debugOutputNum(L"Hooker: Trying to hook function number 0x%08lx", i);
+		//debugOutputNum(L"Hooker: Trying to hook function number 0x%08lx", i);
 		if (FALSE == setHook((funcsToHook+i), hModule)) {
-			debugOutputNum(L"Hooker: failed to set hook. (0x%08lx)", GetLastError());
+			//debugOutputNum(L"Hooker: failed to set hook. (0x%08lx)", GetLastError());
 		}
 		else {
 			debugOutputNum(L"Hooker: hook on 0x%08lx set successfully", i);

@@ -169,12 +169,13 @@ BOOL WINAPI DllMain(
 	__in HINSTANCE  hInstance,
 	__in DWORD      reason,
 	__in LPVOID     reserved) {
-	HMODULE hModule = GetModuleHandleA(NULL);
-	if (!initUserIO() || !initProcData() || !initFuncsToHook(hModule)) {
-		return FALSE;
-	}
+	HMODULE hModule = INVALID_HANDLE_VALUE;
 	switch (reason) {
 		case DLL_PROCESS_ATTACH:
+			hModule = GetModuleHandleA(NULL);
+			if (!initUserIO() || !initProcData() || !initFuncsToHook(hModule) || !initFilesList()) {
+				return FALSE;
+			}
 			hookMultipleFuncs(g_funcsToHookWatcher, hModule, NUM_OF_FUNCS_TO_HOOK_WATCHER);
 			break;
 	}
